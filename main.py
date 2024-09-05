@@ -1,7 +1,7 @@
 import onnxruntime
 import onnx
 import numpy as np
-path = "D:\OneDrive\Desktop\BallBalancer\BallBalance.onnx"
+path = ".\PIDBehaviorModel.onnx"
 sess = onnxruntime.InferenceSession(path)
 
 model = onnx.load(path)
