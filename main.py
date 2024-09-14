@@ -1,13 +1,14 @@
 import modelinfo
+from machine import Machine
 import numpy as np
 import onnxruntime
 import os
 from serial import Serial
 
-
+machine = Machine(2, 3.125, 1.75, 3.669291339)
 serial = Serial("COM3", 9600, timeout=1)
 
-modelName = "BallBalancer.1.onnx"
+modelName = "BallBalancer.2.onnx"
 path = f"{os.path.dirname(os.path.abspath(__file__))}\\{modelName}"
 sess = onnxruntime.InferenceSession(path)
 
@@ -32,3 +33,14 @@ while True:
     x, z = result[0].flatten()
     curAngles += (x,z)
     print(x,z)
+
+    a0 = machine.compute(0, 4.25, curAngles[0], curAngles[1])
+    a1 = machine.compute(1, 4.25, curAngles[0], curAngles[1])
+    a2 = machine.compute(2, 4.25, curAngles[0], curAngles[1])
+
+    print(a0, a1, a2)
+
+    angles = str.encode(f"{a0} {a1} {a2}")
+    serial.write(angles)
+
+
