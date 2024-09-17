@@ -11,6 +11,10 @@
   A2=====Y+
   A3=====Y-
   =================================*/
+
+#include <Stepper.h>
+
+  
 //Define your Touch screen connections
 #define X1 A0
 #define X2 A1
@@ -19,6 +23,10 @@
 //Define your screen resolution as per your Touch screen (Max: 1024)
 #define Xresolution 320 //128
 #define Yresolution 240 //64
+
+#define FULLSTEP 8
+
+Stepper s1(FULLSTEP);
 
 float angles[3];
 
@@ -73,4 +81,12 @@ void loop()
   Serial.print(" ");
   Serial.println(Y);
   delay(100);
+
+  while (Serial.available() < 0) {
+    delay(100);
+  }
+  int incomingByte = Serial.read();
+
+  Serial.print("I received: ");
+  Serial.println(incomingByte, DEC);
 }
