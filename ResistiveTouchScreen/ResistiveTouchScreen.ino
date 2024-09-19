@@ -11,6 +11,10 @@
   A2=====Y+
   A3=====Y-
   =================================*/
+
+#include <Stepper.h>
+
+  
 //Define your Touch screen connections
 #define X1 A0
 #define X2 A1
@@ -20,27 +24,10 @@
 #define Xresolution 320 //128
 #define Yresolution 240 //64
 
+#define FULLSTEP 8
+
+
 float angles[3];
-
-void adjust(String angleData) // Modified: https://forum.arduino.cc/t/how-to-split-a-string-with-space-and-store-the-items-in-array/888813/9
-{
-  int count = 0;
-
-  while (angleData.length() > 0)
-  {
-    int index = angleData.indexOf(" ");
-    if (index == -1) // No space found
-    {
-      angles[count++] = angleData.toFloat();
-      break;
-    }
-    else
-    {
-      angles[count++] = angleData.substring(0, index).toFloat();
-      angleData = angleData.substring(index + 1);
-    }
-  }
-}
 
 void setup()
 {
@@ -73,4 +60,18 @@ void loop()
   Serial.print(" ");
   Serial.println(Y);
   delay(100);
+
+  while (Serial.available() < 0) {
+    delay(100);
+  }
+  String a0 = Serial.readString();
+  a0.trim();
+  angles[0] = a0.toFloat();
+  String a1 = Serial.readString();
+  a1.trim();
+  angles[1] = a1.toFloat();
+  String a2 = Serial.readString();
+  a2.trim();
+  angles[2] = a2.toFloat();
+  Serial.println(a0 + " " + a1 + " " + a2);
 }

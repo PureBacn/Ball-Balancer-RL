@@ -20,19 +20,17 @@ while True:
     data = str(serial.readline())[2:][:-5]
     
     if data.find(" ") == -1:
-        print(data.find(" "))
         continue
     numData = [eval(x) for x in data.split()]
     print(data)
     x, y = numData
-    print(x, y)
 
     data = np.array([[curAngles[0],curAngles[1],x/panelSize[0],y/panelSize[1]]])
     data = data.astype(np.float32)
     result = sess.run(["continuous_actions"],{"obs_0" : data})
     x, z = result[0].flatten()
-    curAngles += (x,z)
-    print(x,z)
+    curAngles = (curAngles[0] + x, curAngles[1] + z))
+    print(curAngles)
 
     a0 = machine.compute(0, 4.25, curAngles[0], curAngles[1])
     a1 = machine.compute(1, 4.25, curAngles[0], curAngles[1])
@@ -42,5 +40,3 @@ while True:
 
     angles = str.encode(f"{a0} {a1} {a2}")
     serial.write(angles)
-
-
