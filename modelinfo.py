@@ -2,6 +2,7 @@ import onnx
 
 
 def get(path):
+    print("\033[1;31m", end="")
     try:
         model = onnx.load(path)
     except:
@@ -12,7 +13,7 @@ def get(path):
     input_all = [node.name for node in model.graph.input]
     input_initializer =  [node.name for node in model.graph.initializer]
     net_feed_input = list(set(input_all)  - set(input_initializer))
-
+    
     print("Inputs: ", net_feed_input)
     print("Input Parameters:")
     for input in model.graph.input:
@@ -35,3 +36,4 @@ def get(path):
         print()
 
     print("Outputs: ", output)
+    print("\033[1;37m", end="")
