@@ -20,6 +20,7 @@ TouchScreen ts = TouchScreen(A1, A0, A3, A2, 0);  //touch screen pins (XGND, YGN
 AccelStepper stepperA(AccelStepper::DRIVER, 2, 5);
 AccelStepper stepperB(AccelStepper::DRIVER, 3, 6);
 AccelStepper stepperC(AccelStepper::DRIVER, 4, 7);
+
 /*
 AccelStepper stepperA(1, 1, 2);  //(driver type, STEP, DIR) Driver A
 AccelStepper stepperB(1, 3, 4);  //(driver type, STEP, DIR) Driver B
@@ -50,10 +51,17 @@ bool detected = 0;              //this value is 1 when the ball is detected and 
 
 void setup() {
   Serial.begin(9600);
+
+  //Set stepper max speeds
+  stepperA.setMaxSpeed(200);
+  stepperB.setMaxSpeed(200);
+  stepperC.setMaxSpeed(200);
+  
   // Adding the steppers to the steppersControl instance for multi stepper control
   steppers.addStepper(stepperA);
   steppers.addStepper(stepperB);
   steppers.addStepper(stepperC);
+  
   //Enable pin
   pinMode(ENA, OUTPUT);           //define enable pin as output
   digitalWrite(ENA, HIGH);        //sets the drivers off initially
