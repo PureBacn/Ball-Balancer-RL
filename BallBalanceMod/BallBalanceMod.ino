@@ -10,7 +10,7 @@
 #include <math.h>
 
 Machine machine(2, 3.125, 1.75, 3.669291339);     //(d, e, f, g) object to define the lengths of the machine
-TouchScreen ts = TouchScreen(A0, A3, A2, A1, 0);  //touch screen pins (XGND, YGND, X5V, Y5V)
+TouchScreen ts = TouchScreen(A2, A3, A0, A1, 0);  //touch screen pins (XGND, YGND, X5V, Y5V)
 /*
 TouchScreen ts = TouchScreen(A1, A0, A3, A2, 0);  //touch screen pins (XGND, YGND, X5V, Y5V)
 */
@@ -38,6 +38,9 @@ long timeI;                                                                     
 
 double out[2];
 long timeI;
+const byte datasize = 41;
+char storeddata[datasize];
+boolean newdata = false;
 
 //stepper motor variables
 long pos[3];                                            // An array to store the target positions for each stepper motor
@@ -50,7 +53,7 @@ double angToStep = 3200 / 360;  //angle to step conversion factor (steps per deg
 bool detected = 0;              //this value is 1 when the ball is detected and the value is 0 when the ball in not detected
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   //Set stepper max speeds
   stepperA.setMaxSpeed(200);
@@ -74,7 +77,6 @@ void loop() {
   //PID(0.5, 0.5);  //(X setpoint, Y setpoint) -- must be looped
   Shift();
 }
-//moves/positions the platform with the given parameters
 void moveTo(double hz, double nx, double ny) {
   //if the ball has been detected
   if (detected) {
@@ -82,7 +84,6 @@ void moveTo(double hz, double nx, double ny) {
     for (int i = 0; i < 3; i++) {
       pos[i] = round((angOrig - machine.theta(i, hz, nx, ny)) * angToStep);
     }
-    /*
     //sets calculated speed
     stepperA.setMaxSpeed(speed[A]);
     stepperB.setMaxSpeed(speed[B]);
@@ -91,7 +92,6 @@ void moveTo(double hz, double nx, double ny) {
     stepperA.setAcceleration(speed[A] * 30);
     stepperB.setAcceleration(speed[B] * 30);
     stepperC.setAcceleration(speed[C] * 30);
-    */
     //sets target positions
     stepperA.moveTo(pos[A]);
     stepperB.moveTo(pos[B]);
@@ -134,11 +134,33 @@ void setData(String data){
     }
   }
 
-  Serial.println("!x: " + x + " z: " + z);
-
   out[0] = x.toDouble();
   out[1] = z.toDouble();
 }
+
+void receivedata() {
+  static byte index = 0;
+  char endmarker = '\n';
+  char read;
+  //Serial.println("Received Data");
+  while (Serial.available() > 0 && !newdata) {
+    read = Serial.read();
+   
+    if (read != endmarker) {
+      storeddata[index] = read;
+      index++;
+      if (index >= datasize) {
+        index = datasize - 1;
+      }
+    }
+    else {
+      //storeddata[index] = "\0";
+      index = 0;
+      newdata = true;
+    }
+  }
+}
+
 
 //takes in an X and Y setpoint/position and moves the ball to that position
 void Shift() { //PID(double setpointX, double setpointY) {
@@ -146,19 +168,18 @@ void Shift() { //PID(double setpointX, double setpointY) {
   //if the ball is detected (the x position will not be 0)
   if (p.x != 0) {
     detected = 1;
-    Serial.println("!DETECTED");
-    /*
-    //calculates PID values
-    for (int i = 0; i < 2; i++) {
-      errorPrev[i] = error[i];                                                                     //sets previous error
-      error[i] = (i == 0) * (Xoffset - p.x - setpointX) + (i == 1) * (Yoffset - p.y - setpointY);  //sets error aka X or Y ball position
-      integr[i] += error[i] + errorPrev[i];                                                        //calculates the integral of the error (proportional but not equal to the true integral of the error)
-      deriv[i] = error[i] - errorPrev[i];                                                          //calcuates the derivative of the error (proportional but not equal to the true derivative of the error)
-      deriv[i] = isnan(deriv[i]) || isinf(deriv[i]) ? 0 : deriv[i];                                //checks if the derivative is a real number or infinite
-      out[i] = kp * error[i] + ki * integr[i] + kd * deriv[i];                                     //sets output
-      out[i] = constrain(out[i], -0.25, 0.25);                                                     //contrains output to have a magnitude of 0.25
+    Serial.print((p.x - 100.0) / 810.0);
+    Serial.print(" ");
+    Serial.println((p.y - 90.0) / 850.0);
+
+    receivedata();
+    if (newdata) {
+      char data[strlen(storeddata) + 1];
+      strcpy(data, storeddata);
+      setData(String(data));
+      newdata = false;
     }
-    //calculates stepper motor speeds
+
     for (int i = 0; i < 3; i++) {
       speedPrev[i] = speed[i];                                                                                                           //sets previous speed
       speed[i] = (i == A) * stepperA.currentPosition() + (i == B) * stepperB.currentPosition() + (i == C) * stepperC.currentPosition();  //sets current position
@@ -166,24 +187,6 @@ void Shift() { //PID(double setpointX, double setpointY) {
       speed[i] = constrain(speed[i], speedPrev[i] - 200, speedPrev[i] + 200);                                                            //filters speed by preventing it from beign over 100 away from last speed
       speed[i] = constrain(speed[i], 0, 1000);                                                                                           //constrains sped from 0 to 1000
     }
-    Serial.println((String) "X OUT = " + out[0] + "   Y OUT = " + out[1] + "   Speed A: " + speed[A]);  //print X and Y outputs
-    */
-    
-    Serial.print((p.x - 100.0) / 810.0);
-    Serial.print(" ");
-    Serial.println((p.y - 90.0) / 850.0);
-    
-    do {
-      // Run the steppers
-      stepperA.run();
-      stepperB.run();
-      stepperC.run();
-      delay(100);
-    } while (Serial.available() < 0);
-    
-    String data = Serial.readString();
-    data.trim();
-    setData(data);
   }
   //if the ball is not detected (the x value will be 0)
   else {
@@ -191,13 +194,29 @@ void Shift() { //PID(double setpointX, double setpointY) {
     delay(10);                  //10 millis delay before another reading
     TSPoint p = ts.getPoint();  //measure X and Y positions again to confirm no ball
     if (p.x == 0) {             //if the ball is still not detected
-      Serial.println("!BALL NOT DETECTED");
       detected = 0;
     }
   }
+  moveTo(4.25, -out[0], -out[1]);
+  /*
   //continues moving platform and waits until 20 millis has elapsed
   timeI = millis();
   while (millis() - timeI < 20) {
-    moveTo(4.25, -out[0], -out[1]);  //moves the platfrom
+    moveTo(4.25, out[0], out[1]);  //moves the platfrom
   }
+  */
 }
+
+/*      POV: You Work At Google
+⣿⠟⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⠛⢻⣿⣿⡇
+⣿⡆⠊⠈⣿⢿⡟⠛⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣎⠈⠻⣿⡇
+⣿⣷⣠⠁⢀⠰⠀⣰⣿⣿⣿⣿⣿⣿⠟⠋⠛⠛⠿⠿⢿⣿⣿⣿⣧⠀⢹⣿⡑⠐ ⣿⣿
+⣿⣿⣿⠀⠁⠀⠀⣿⣿⣿⣿⠟⡩⠐⠀⠀⠀⠀⢐⠠⠈⠊⣿⣿⣿⡇⠘⠁⢀⠆⢀⣿⣿⡇
+⣿⣿⣿⣆⠀⠀⢤⣿⣿⡿⠃⠈⠀⣠⣶⣿⣿⣷⣦⡀⠀⠀⠈⢿⣿⣇⡆⠀⠀⣠⣾⣿⣿⡇
+⣿⣿⣿⣿⣧⣦⣿⣿⣿⡏⠀⠀⣰⣿⣿⣿⣿⣿⣿⣿⡆⠀⠀⠐⣿⣿⣷⣦⣷⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀⣾⣿⣿⠋⠁⠀⠉⠻⣿⣿⣧⠀⠠⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡀⣿⡿⠁⠀⠀⠀⠀⠀⠘⢿⣿⠀⣺⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⣠⣂⠀⠀⠀⠀⠀⠀⠀⢀⣁⢠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣶⣄⣤⣤⣔⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇
+ */
