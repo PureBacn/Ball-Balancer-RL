@@ -15,7 +15,10 @@ sess = onnxruntime.InferenceSession(path)
 
 modelinfo.get(path)
 curAngles = (0,0)
-
+limit = np.degrees(0.125)
+last = (0,0)
+deltInflu = 5
+weight = 10
 start = 0
 
 while True:
@@ -24,24 +27,32 @@ while True:
     
     if data.find(" ") == -1 or data[:1] == "!":
         if len(data) > 0:
+            if data == "!Reset":
+                curAngles = (0,0)
+                continue
             print("\033[1;32m", end="")
             print(f"Received: {data}")
         continue
 
     numData = [eval(x) for x in data.split()]
     print("\033[1;34m", end="")
-    print(f"Point: {data}")
     x, y = numData
     
+    delta = (x-last[0],y-last[1])
+    last = (x,y)
+
+    print(f"Point: {x+delta[0]*deltInflu} {y+delta[1]*deltInflu}")
+
     data = np.array([[curAngles[0],curAngles[1],x,y]])
     data = data.astype(np.float32)
     result = sess.run(["continuous_actions"],{"obs_0" : data})
     x, z = result[0].flatten()
+    print(f"Offset: {x*weight} {z*weight}")
 
-    curAngles = (np.clip(curAngles[0] + x,-0.25,0.25), np.clip(curAngles[1] + z,-0.25,0.25))
-    print(f"Angles: {str(curAngles[0])[:20]} {str(curAngles[1])[:20]}\n")
+    curAngles = (np.clip(curAngles[0] + x, -limit, limit), np.clip(curAngles[1] + z, -limit, limit))
+    print(f"Angles: {str(-curAngles[0])[:20]} {str(curAngles[1])[:20]}\n")
 
-    angles = str.encode(f"{str(curAngles[0])[:20]} {str(curAngles[1])[:20]}\n")
+    angles = str.encode(f"{str(np.radians(-curAngles[0]))[:20]} {str(np.radians(curAngles[1]))[:20]}\n")
     serial.write(angles)
     print(f"Time: ", time.time()-start)
     start = time.time()

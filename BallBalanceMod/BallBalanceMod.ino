@@ -46,10 +46,10 @@ boolean newdata = false;
 long pos[3];                                            // An array to store the target positions for each stepper motor
 int ENA = 4;                                           //enable pin for the drivers
 double angOrig = 206.662752199;                        //original angle that each leg starts at
-double speed[3] = { 0, 0, 0 }, speedPrev[3], ks = 20;  //the speed of the stepper motor and the speed amplifying constant                                                                         //variables to capture initial times
+double speed[3] = { 0, 0, 0 }, speedPrev[3], ks = 200;  //the speed of the stepper motor and the speed amplifying constant                                                                         //variables to capture initial times
 
 //Other Variables
-double angToStep = 3200 / 360;  //angle to step conversion factor (steps per degree) for 16 microsteps or 3200 steps/rev
+double angToStep = 6400 / 360;  //angle to step conversion factor (steps per degree) for 16 microsteps or 3200 steps/rev
 bool detected = 0;              //this value is 1 when the ball is detected and the value is 0 when the ball in not detected
 
 void setup() {
@@ -80,26 +80,27 @@ void loop() {
 void moveTo(double hz, double nx, double ny) {
   //if the ball has been detected
   if (detected) {
-    //calculates stepper motor positon
+    //calculates stepper motor position
     for (int i = 0; i < 3; i++) {
       pos[i] = round((angOrig - machine.theta(i, hz, nx, ny)) * angToStep);
     }
+    
     //sets calculated speed
-    stepperA.setMaxSpeed(speed[A]);
-    stepperB.setMaxSpeed(speed[B]);
-    stepperC.setMaxSpeed(speed[C]);
+    stepperA.setMaxSpeed(speed[A]*32);
+    stepperB.setMaxSpeed(speed[B]*32);
+    stepperC.setMaxSpeed(speed[C]*32);
+    
     //sets acceleration to be proportional to speed
-    stepperA.setAcceleration(speed[A] * 30);
-    stepperB.setAcceleration(speed[B] * 30);
-    stepperC.setAcceleration(speed[C] * 30);
-    //sets target positions
+    stepperA.setAcceleration(speed[A] * 30*32);
+    stepperB.setAcceleration(speed[B] * 30*32);
+    stepperC.setAcceleration(speed[C] * 30*32);
+
+    stepperC.setAcceleration(1000*32);
     stepperA.moveTo(pos[A]);
     stepperB.moveTo(pos[B]);
     stepperC.moveTo(pos[C]);
     //runs stepper to target position (increments at most 1 step per call)
-    stepperA.run();
-    stepperB.run();
-    stepperC.run();
+    steppers.run();
   }
   //if the hasn't been detected
   else {
@@ -112,7 +113,7 @@ void moveTo(double hz, double nx, double ny) {
     stepperC.setMaxSpeed(800);
     //moves the stepper motors
     steppers.moveTo(pos);
-    steppers.run();  //runs stepper to target position (increments at most 1 step per call)
+    steppers.runSpeedToPosition();  //runs stepper to target position (increments at most 1 step per call)
   }
 }
 
@@ -134,8 +135,8 @@ void setData(String data){
     }
   }
 
-  out[0] = x.toDouble();
-  out[1] = z.toDouble();
+  out[0] = constrain(x.toDouble(),-0.2,0.2);
+  out[1] = constrain(z.toDouble(),-0.2,0.2);
 }
 
 void receivedata() {
@@ -168,9 +169,9 @@ void Shift() { //PID(double setpointX, double setpointY) {
   //if the ball is detected (the x position will not be 0)
   if (p.x != 0) {
     detected = 1;
-    Serial.print((p.x - 100.0) / 810.0);
+    Serial.print((p.x - 75.0) / 845.0);
     Serial.print(" ");
-    Serial.println((p.y - 90.0) / 850.0);
+    Serial.println((p.y - 150.0) / 705.0);
 
     receivedata();
     if (newdata) {
@@ -194,17 +195,19 @@ void Shift() { //PID(double setpointX, double setpointY) {
     delay(10);                  //10 millis delay before another reading
     TSPoint p = ts.getPoint();  //measure X and Y positions again to confirm no ball
     if (p.x == 0) {             //if the ball is still not detected
+      Serial.println("!Reset");
       detected = 0;
+      out[0]=0;
+      out[1]=0;
     }
   }
-  moveTo(4.25, -out[0], -out[1]);
-  /*
+  //moveTo(4.25, -out[0], -out[1]);
+  
   //continues moving platform and waits until 20 millis has elapsed
   timeI = millis();
   while (millis() - timeI < 20) {
-    moveTo(4.25, out[0], out[1]);  //moves the platfrom
+    moveTo(4.25, -out[0], -out[1]);  //moves the platfrom
   }
-  */
 }
 
 /*      POV: You Work At Google
