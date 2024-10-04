@@ -49,7 +49,7 @@ double angOrig = 206.662752199;                        //original angle that eac
 double speed[3] = { 0, 0, 0 }, speedPrev[3], ks = 200;  //the speed of the stepper motor and the speed amplifying constant                                                                         //variables to capture initial times
 
 //Other Variables
-double angToStep = 6400 / 360;  //angle to step conversion factor (steps per degree) for 16 microsteps or 3200 steps/rev
+double angToStep = 1600 / 360;  //angle to step conversion factor (steps per degree) for 16 microsteps or 3200 steps/rev
 bool detected = 0;              //this value is 1 when the ball is detected and the value is 0 when the ball in not detected
 
 void setup() {
@@ -86,14 +86,13 @@ void moveTo(double hz, double nx, double ny) {
     }
     
     //sets calculated speed
-    stepperA.setMaxSpeed(speed[A]*32);
-    stepperB.setMaxSpeed(speed[B]*32);
-    stepperC.setMaxSpeed(speed[C]*32);
-    
+    stepperA.setMaxSpeed(speed[A]);
+    stepperB.setMaxSpeed(speed[B]);
+    stepperC.setMaxSpeed(speed[C]);
     //sets acceleration to be proportional to speed
-    stepperA.setAcceleration(speed[A] * 30*32);
-    stepperB.setAcceleration(speed[B] * 30*32);
-    stepperC.setAcceleration(speed[C] * 30*32);
+    stepperA.setAcceleration(speed[A] * 30);
+    stepperB.setAcceleration(speed[B] * 30);
+    stepperC.setAcceleration(speed[C] * 30);
 
     stepperC.setAcceleration(1000*32);
     stepperA.moveTo(pos[A]);
