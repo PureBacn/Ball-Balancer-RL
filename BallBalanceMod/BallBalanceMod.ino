@@ -49,7 +49,7 @@ double angOrig = 206.662752199;                        //original angle that eac
 double speed[3] = { 0, 0, 0 }, speedPrev[3], ks = 200;  //the speed of the stepper motor and the speed amplifying constant                                                                         //variables to capture initial times
 
 //Other Variables
-double angToStep = 1600 / 360;  //angle to step conversion factor (steps per degree) for 16 microsteps or 3200 steps/rev
+double angToStep = 3200 / 360;  //angle to step conversion factor (steps per degree) for 16 microsteps or 3200 steps/rev
 bool detected = 0;              //this value is 1 when the ball is detected and the value is 0 when the ball in not detected
 
 void setup() {
@@ -93,8 +93,6 @@ void moveTo(double hz, double nx, double ny) {
     stepperA.setAcceleration(speed[A] * 30);
     stepperB.setAcceleration(speed[B] * 30);
     stepperC.setAcceleration(speed[C] * 30);
-
-    stepperC.setAcceleration(1000*32);
     stepperA.moveTo(pos[A]);
     stepperB.moveTo(pos[B]);
     stepperC.moveTo(pos[C]);
@@ -180,6 +178,10 @@ void Shift() { //PID(double setpointX, double setpointY) {
       newdata = false;
     }
 
+    speed[0]=1000;
+    speed[1]=1000;
+    speed[2]=1000;
+    /*
     for (int i = 0; i < 3; i++) {
       speedPrev[i] = speed[i];                                                                                                           //sets previous speed
       speed[i] = (i == A) * stepperA.currentPosition() + (i == B) * stepperB.currentPosition() + (i == C) * stepperC.currentPosition();  //sets current position
@@ -187,6 +189,7 @@ void Shift() { //PID(double setpointX, double setpointY) {
       speed[i] = constrain(speed[i], speedPrev[i] - 200, speedPrev[i] + 200);                                                            //filters speed by preventing it from beign over 100 away from last speed
       speed[i] = constrain(speed[i], 0, 1000);                                                                                           //constrains sped from 0 to 1000
     }
+    */
   }
   //if the ball is not detected (the x value will be 0)
   else {

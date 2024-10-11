@@ -9,7 +9,7 @@ from serial import Serial
 
 serial = Serial("COM5", baudrate=115200, timeout=0)
 
-modelName = "BallBalancerScaled.3.onnx"
+modelName = "BallBalancerScaledFINAL.onnx"
 path = f"{os.path.dirname(os.path.abspath(__file__))}\\{modelName}"
 sess = onnxruntime.InferenceSession(path)
 
@@ -17,21 +17,13 @@ modelinfo.get(path)
 #curAngles = (0,0)
 limit = np.degrees(0.25)
 last = (0,0)
-prev = [0,0,0,0]
 deltInflu = 5
 weight = 10
 start = 0
 x,y = 0,0
 
 def retrieveData():
-    global last
-    global prev
-    curData = [last[0],last[1], x, y]
-    newData = prev
-    for entry in curData:
-        newData.append(entry)
-    prev = curData
-    return newData
+    return [x,y]
 
 
 while True:
@@ -42,7 +34,6 @@ while True:
         if len(data) > 0:
             if data == "!Reset":
                 last = (0,0)
-                prev = [0,0,0,0]
                 continue
             print("\033[1;32m", end="")
             print(f"Received: {data}")
@@ -60,12 +51,9 @@ while True:
     data = data.astype(np.float32)
     result = sess.run(["continuous_actions"],{"obs_0" : data})
     xa, za = result[0].flatten()
-    print(f"Offset: {xa} {za}")
-
-    last = (xa*limit,za*limit)
-    print(f"Angles: {str(-last[0])[:20]} {str(last[1])[:20]}\n")
-
-    angles = str.encode(f"{str(np.radians(last[0]))[:20]} {str(np.radians(last[1]))[:20]}\n")
+    print(f"Angle: {xa*limit} {za*limit}")
+    
+    angles = str.encode(f"{str(np.radians(xa*limit))[:20]} {str(np.radians(za*limit))[:20]}\n")
     serial.write(angles)
     print(f"Time: ", time.time()-start)
     start = time.time()
